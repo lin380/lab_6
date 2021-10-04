@@ -26,7 +26,6 @@ You can preview this README.md document by clicking the 'Preview' button in the 
   - tidyverse
   - tadr
   - rtweet
-  - rvest
 
 ### Tasks
 
