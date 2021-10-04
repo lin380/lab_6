@@ -1,0 +1,122 @@
+---
+title: 'Lab #6 (model)'
+author: "Jerid Francom"
+date: "10/4/2021"
+output: 
+  pdf_document: 
+    toc: yes
+  html_document: 
+    toc: yes
+    df_print: kable
+---
+
+```{r setup, message=FALSE}
+library(tidyverse) # to manipulate data and plot
+library(tadr) # to download compressed files
+library(rtweet) # to interface with Twitter API
+library(rvest) # to webscrape
+```
+
+
+# Direct downloads
+
+The goal of this section is to download a compressed file and decompress its contents into the `data/original/` directory. The data to be downloaded comes from the [ACTIV-ES Corpus](https://github.com/francojc/activ-es) available on GitHub.
+
+First, I will source the `functions/functions.R` file to load the `get_compressed_data()` into the current R session.
+
+```{r dd-source-functions}
+source(file = "functions/functions.R") # source the get_compressed_data function
+args(get_compressed_data) # view the arguments of the function
+```
+
+The `get_compressed_data()` function has three arguments. Two are required. `url` will be where the URL address will be added and `target_dir` will be where I add the directory where I want to download and decompress the .zip file. `force` has a default of 'FALSE', which will be set to 'TRUE' to force a redownload of the .zip file.
+
+```{r dd-download-actives-tagged}
+get_compressed_data(url = "https://github.com/francojc/activ-es/raw/master/activ-es-v.02/corpus/tagged.zip", target_dir = "data/original/actives/") # download and decompress
+```
+
+Let's look at the updated project directory structure.
+
+```{r dd-directory-tree}
+fs::dir_tree(recurse = 2) # show the project directory structure (2 levels deep)
+```
+
+
+# API interfaces
+
+In this section I am going to work with the rtweet package to access the Twitter API. I will perform a search for a set of terms, compile one dataset, and save the dataset to disk as a .csv file. 
+
+First I need to load the pre-established Twitter authentication token. 
+
+```{r ai-load-authentication-token}
+student_token <- read_rds(file = "student_token.rds") # read the authentication token .rds file
+```
+
+I tested the following code in the R console and it worked!
+
+```{r ai-stream-test, eval=FALSE}
+stream_usa <- 
+  stream_tweets(lookup_coords("usa"), timeout = 10, token = student_token) # NOT RUN (test in R Console)
+```
+
+Here is the `stream_usa()` function
+
+```{r ai-stream-function}
+stream_usa <- function(file, timeout = 10, token = student_token, force = FALSE) {
+  # Function:
+  # Stream tweets from the US and save results to a csv file
+  
+  if(!file.exists(file) | force == TRUE) { # check if the file does not exist or force is set to TRUE
+    message("Getting ready to stream.") # message
+    if(!dir.exists(dirname(file))) { # check to see if the directory exists
+      dir.create(path = dirname(file), showWarnings = FALSE, recursive = TRUE) # create the necessary directory structure
+      message("Directory created.") # message
+    }
+    
+    stream <- # results
+      rtweet::stream_tweets(lookup_coords("usa"),  # run stream_tweets for tweets from within the US
+                            timeout = timeout, # set the timeout for the stream
+                            token = token) %>% # set the API token used
+      lat_lng() # extract the lat and long coordinates from the stream results
+    
+    rtweet::save_as_csv(x = stream, file_name = file) # save the stream object as a csv file
+    message("Stream file saved!") # message
+    
+  } else { # if the file exists and force is FALSE
+    message("Stream file already exists. Set 'force = TRUE' to overwrite existing data.")
+  }
+}
+```
+
+
+Run the `stream_usa()` function setting the `timeout` argument to `300`.
+
+```{r ai-run-stream-usa}
+stream_usa(file = "data/original/twitter/stream_twitter_usa.csv", 
+           timeout = 300) # stream for 5 minutes
+```
+
+Now I will check to see that the data structure has been created.
+
+```{r ai-directory-structure-twitter}
+fs::dir_tree(recurse = 2) # show the project directory structure (2 levels deep)
+```
+
+
+Read in the twitter data that was stored in the .csv file.
+
+```{r ai-read-twitter-stream, message=FALSE, warning=FALSE}
+stream_twitter_usa <- read_csv(file = "data/original/twitter/stream_twitter_usa.csv") # Read streamed twitter data
+```
+
+
+```{r ai-plot-tweets, message=FALSE}
+# Function sourced functions.R script
+source("functions/functions.R") # source functions.R script
+plot_tweet_langs(tweets = stream_twitter_usa) # plot tweets labeling the languages by color
+```
+
+
+# Assessment
+
+...
