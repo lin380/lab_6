@@ -14,7 +14,6 @@ output:
 library(tidyverse) # to manipulate data and plot
 library(tadr) # to download compressed files
 library(rtweet) # to interface with Twitter API
-library(rvest) # to webscrape
 ```
 
 
